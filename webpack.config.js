@@ -1,6 +1,8 @@
+const webpack = require('webpack');
+
 const path = require('path');
 
-module.exports = {
+const config = {
     mode: 'development',
     entry: {
         'pcui': './src/index.js',
@@ -47,5 +49,17 @@ module.exports = {
             'node_modules'
         ],
         extensions: ['.jsx', '.js']
-    }
+    },
+    plugins: []
 };
+
+if (process.env.ENGINE_PATH) {
+    config.plugins.push(
+        new webpack.NormalModuleReplacementPlugin(
+            /^playcanvas$/,
+            path.resolve(__dirname, process.env.ENGINE_PATH)
+        )
+    );
+}
+
+module.exports = config;

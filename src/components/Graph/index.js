@@ -4,6 +4,9 @@ import { diff } from 'json-diff';
 import GraphView from './graph-view';
 import './style.scss';
 
+import core_nodes from '../../../core_nodes.json';
+import { shadergraph } from 'playcanvas';
+
 const deepCopyFunction = (inObject) => {
     let outObject, value, key;
 
@@ -32,6 +35,25 @@ export var GRAPH_ACTIONS = {
     DELETE_EDGE: 3
 };
 
+var MATERIAL_SCHEMA = {
+    /*NODE: {
+        VARIABLE_FLOAT: 0,
+        MULTIPLY: 1,
+        OUT: 2,
+        ADD: 3,
+        SINE: 4,
+        TEXTURE: 5,
+        VARIABLE_VEC_2: 6,
+    },*/
+    EDGE: {
+        FLOAT: 1,
+        VEC_2: 2,
+        VEC_3: 3,
+        VEC_4: 4,
+        TEXTURE: 5
+    }
+};
+
 /**
  * @name Graph
  * @classdesc Represents a graph.
@@ -50,9 +72,83 @@ class Graph extends Element {
         super(args.dom ? args.dom : document.createElement('div'), args);
         this.class.add('pcui-graph');
         this.diff = diff;
-        this._graphData = new Observer({ data: args.graphData });
-        this._graphSchema = args.graphSchema;
-        this._contextMenuItems = args.contextMenuItems;
+
+        shadergraph.start(core_nodes);
+
+        var coreNodeSchema = args.graphSchema;
+        var coreNodeContextMenuItems = args.contextMenuItems;
+
+        Object.keys(core_nodes).forEach( (key, index) => {
+            if (index < 10)
+            {
+                var corenode = shadergraph._getNode(key);
+
+                var inPorts = [];
+                var outPorts = [];
+
+                corenode.graphData.ioPorts.forEach( (port) => {
+                    var portSchema = {};
+
+                    switch (port.type) {
+                        case 'sampler2D':
+                            portSchema.type = MATERIAL_SCHEMA.EDGE.TEXTURE;
+                            break;
+                        case 'vec2':
+                            portSchema.type = MATERIAL_SCHEMA.EDGE.VEC_2;
+                            break;
+                        case 'vec3':
+                            portSchema.type = MATERIAL_SCHEMA.EDGE.VEC_3;
+                            break;
+                        case 'vec4':
+                            portSchema.type = MATERIAL_SCHEMA.EDGE.VEC_4;
+                            break;
+                        case 'float':
+                        default:
+                            portSchema.type = MATERIAL_SCHEMA.EDGE.FLOAT;
+                            break;
+                    }
+
+                    if (port.name.startsWith('IN_'))
+                    {
+                        portSchema.name = port.name;
+                        inPorts.push(portSchema);
+                    }
+                    else 
+                    {
+                        portSchema.name = port.name;
+                        outPorts.push(portSchema);
+                    }
+                });
+
+                coreNodeSchema.nodes[key] = {
+                    name: key,
+                    fill: 'grey',
+                    stroke: '#20292b',
+                    contextMenuItems: [],
+                    inPorts: inPorts,
+                    outPorts: outPorts
+                };
+
+                var coreContextItem = {
+                    text: 'New ' + key,
+                    action: GRAPH_ACTIONS.ADD_NODE,
+                    nodeType: key,
+                    name: key
+                };
+
+                coreNodeContextMenuItems.push(coreContextItem);
+            }
+        });
+
+        var visGraphData = args.graphData; // { nodes: {}, edges: {} };
+
+        this._graphData = new Observer({ data: visGraphData });
+        this._graphSchema = coreNodeSchema;
+        this._contextMenuItems = coreNodeContextMenuItems;
+
+        // this._graphData = new Observer({ data: args.graphData });
+        // this._graphSchema = args.graphSchema;
+        // this._contextMenuItems = args.contextMenuItems;
 
         this._suppressGraphDataEvents = false;
 
