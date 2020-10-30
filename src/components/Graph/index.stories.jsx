@@ -267,7 +267,12 @@ var materialSchema = {
             name: 'StdMat Output',
             fill: 'grey',
             stroke: '#20292b',
-            contextMenuItems: [],
+            contextMenuItems: [
+                {
+                    text: 'Save JSON',
+                    action: GRAPH_ACTIONS.SAVE_JSON
+                }                
+            ],
             inPorts: [
                 {
                     name: 'vertex offset',
@@ -359,7 +364,13 @@ var materialData = {
         }
     },
     edges: {
-
+ /*       '1234,0-1236,0': {
+            edgeType: MATERIAL_SCHEMA.EDGE.FLOAT,
+            from: 1234,
+            to: 1236,
+            outPort: 0,
+            inPort: 0
+        }*/
     }
 };
 

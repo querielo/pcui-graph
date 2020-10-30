@@ -36,15 +36,14 @@ export var GRAPH_ACTIONS = {
 };
 
 var MATERIAL_SCHEMA = {
-    /*NODE: {
-        VARIABLE_FLOAT: 0,
-        MULTIPLY: 1,
-        OUT: 2,
-        ADD: 3,
-        SINE: 4,
-        TEXTURE: 5,
-        VARIABLE_VEC_2: 6,
-    },*/
+    NODE: {
+        PARAM_FLOAT: 0,
+        PARAM_VEC_2: 1,
+        PARAM_VEC_3: 2,
+        PARAM_VEC_4: 3,
+        PARAM_TEXTURE: 4,
+        OUTPUT_STDMAT: 5,
+    },
     EDGE: {
         FLOAT: 1,
         VEC_2: 2,
@@ -73,71 +72,72 @@ class Graph extends Element {
         this.class.add('pcui-graph');
         this.diff = diff;
 
+        this.nodeIdMap = {};
+
         shadergraph.start(core_nodes);
+
+        this._shaderGraph = shadergraph;
 
         var coreNodeSchema = args.graphSchema;
         var coreNodeContextMenuItems = args.contextMenuItems;
 
         Object.keys(core_nodes).forEach( (key, index) => {
-            if (index < 10)
-            {
-                var corenode = shadergraph._getNode(key);
+            var corenode = shadergraph._getNode(key);
 
-                var inPorts = [];
-                var outPorts = [];
+            var inPorts = [];
+            var outPorts = [];
 
-                corenode.graphData.ioPorts.forEach( (port) => {
-                    var portSchema = {};
+            corenode.graphData.ioPorts.forEach( (port) => {
+                var portSchema = {};
 
-                    switch (port.type) {
-                        case 'sampler2D':
-                            portSchema.type = MATERIAL_SCHEMA.EDGE.TEXTURE;
-                            break;
-                        case 'vec2':
-                            portSchema.type = MATERIAL_SCHEMA.EDGE.VEC_2;
-                            break;
-                        case 'vec3':
-                            portSchema.type = MATERIAL_SCHEMA.EDGE.VEC_3;
-                            break;
-                        case 'vec4':
-                            portSchema.type = MATERIAL_SCHEMA.EDGE.VEC_4;
-                            break;
-                        case 'float':
-                        default:
-                            portSchema.type = MATERIAL_SCHEMA.EDGE.FLOAT;
-                            break;
-                    }
+                switch (port.type) {
+                    case 'sampler2D':
+                        portSchema.type = MATERIAL_SCHEMA.EDGE.TEXTURE;
+                        break;
+                    case 'vec2':
+                        portSchema.type = MATERIAL_SCHEMA.EDGE.VEC_2;
+                        break;
+                    case 'vec3':
+                        portSchema.type = MATERIAL_SCHEMA.EDGE.VEC_3;
+                        break;
+                    case 'vec4':
+                        portSchema.type = MATERIAL_SCHEMA.EDGE.VEC_4;
+                        break;
+                    case 'float':
+                    default:
+                        portSchema.type = MATERIAL_SCHEMA.EDGE.FLOAT;
+                        break;
+                }
 
-                    if (port.name.startsWith('IN_'))
-                    {
-                        portSchema.name = port.name;
-                        inPorts.push(portSchema);
-                    }
-                    else 
-                    {
-                        portSchema.name = port.name;
-                        outPorts.push(portSchema);
-                    }
-                });
+                if (port.name.startsWith('IN_'))
+                {
+                    portSchema.name = port.name;
+                    inPorts.push(portSchema);
+                }
+                else 
+                {
+                    portSchema.name = port.name;
+                    outPorts.push(portSchema);
+                }
+            });
 
-                coreNodeSchema.nodes[key] = {
-                    name: key,
-                    fill: 'grey',
-                    stroke: '#20292b',
-                    contextMenuItems: [],
-                    inPorts: inPorts,
-                    outPorts: outPorts
-                };
+            coreNodeSchema.nodes[key] = {
+                name: key,
+                fill: 'grey',
+                stroke: '#20292b',
+                contextMenuItems: [],
+                inPorts: inPorts,
+                outPorts: outPorts
+            };
 
-                var coreContextItem = {
-                    text: 'New ' + key,
-                    action: GRAPH_ACTIONS.ADD_NODE,
-                    nodeType: key,
-                    name: key
-                };
+            var coreContextItem = {
+                text: 'New ' + key,
+                action: GRAPH_ACTIONS.ADD_NODE,
+                nodeType: key,
+                name: key
+            };
 
-                coreNodeContextMenuItems.push(coreContextItem);
-            }
+            coreNodeContextMenuItems.push(coreContextItem);
         });
 
         var visGraphData = args.graphData; // { nodes: {}, edges: {} };
@@ -186,6 +186,7 @@ class Graph extends Element {
             }
             return item;
         });
+
         this.view.addContextMenu(viewContextMenuItems);
     }
 
@@ -204,6 +205,46 @@ class Graph extends Element {
             return item;
         });
         this.view.addEdgeContextMenu(edgeId, contextMenuItems);
+
+        var srcNodeOrPort = this.nodeIdMap[edge.from];
+        var dstNodeOrPort = this.nodeIdMap[edge.to];
+
+        var srcIsPort = (this._graphData.get(`data.nodes`)[edge.from].nodeType < MATERIAL_SCHEMA.NODE.OUTPUT_STDMAT);
+        var dstIsPort = (this._graphData.get(`data.nodes`)[edge.to].nodeType === MATERIAL_SCHEMA.NODE.OUTPUT_STDMAT);
+
+        var srcNodeID = srcIsPort ? -1 : srcNodeOrPort;
+        var dstNodeID = dstIsPort ? -1 : dstNodeOrPort;
+        var srcPortName = srcIsPort ? srcNodeOrPort.name : this._graphSchema.nodes[this._graphData.get(`data.nodes`)[edge.from].nodeType].outPorts[edge.outPort].name;
+        var dstPortName = dstIsPort ? dstNodeOrPort.name : this._graphSchema.nodes[this._graphData.get(`data.nodes`)[edge.to].nodeType].inPorts[edge.inPort].name;
+        /*
+        * pc.shadergraph.output(arg, 'vec3', 'vertOff');
+        * pc.shadergraph.output(arg, 'float', 'dAlpha');
+        * pc.shadergraph.output(arg, 'float', 'dMetalness');
+        * pc.shadergraph.output(arg, 'float', 'dGlossiness');
+        * pc.shadergraph.output(arg, 'vec3', 'dAlbedo');
+        * pc.shadergraph.output(arg, 'vec3', 'dEmission');
+        */
+        if (dstIsPort)
+        {
+            switch (edge.inPort) {
+                case 0:
+                    dstPortName = `OUT_vertOff`;
+                    this._shaderGraph.graph.addOutput('vec3', 'vertOff');
+                    break;
+                case 1:
+                    dstPortName = `OUT_dEmission`;
+                    this._shaderGraph.graph.addOutput('vec3', 'dEmission');
+                    break;
+                case 2:
+                    dstPortName = `OUT_dAlpha`;
+                    this._shaderGraph.graph.addOutput('float', 'dAlpha');
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        this.nodeIdMap[edge.id] = this._shaderGraph.graph.connect(srcNodeID, srcPortName, dstNodeID, dstPortName);
     }
 
     _createUnconnectedEdgeForNode(node, edgeType) {
@@ -243,9 +284,33 @@ class Graph extends Element {
             if (item.action === GRAPH_ACTIONS.DELETE_NODE) {
                 item.onClick = () => this._deleteNode(node);
             }
+            if (item.action === GRAPH_ACTIONS.SAVE_JSON) {
+                item.onClick = () => this._saveJSON();
+            }
             return item;
         });
         this.view.addNodeContextMenu(node.id, contextMenuItems);
+
+        switch (node.nodeType) {
+            case MATERIAL_SCHEMA.NODE.PARAM_FLOAT:
+                this.nodeIdMap[node.id] = this._shaderGraph.graph.addInput('float', 'float_'+node.id );
+                break;
+            case MATERIAL_SCHEMA.NODE.PARAM_VEC_2:
+                this.nodeIdMap[node.id] = this._shaderGraph.graph.addInput('vec2', 'vec2_'+node.id );
+                break;
+            case MATERIAL_SCHEMA.NODE.PARAM_VEC_3:
+                this.nodeIdMap[node.id] = this._shaderGraph.graph.addInput('vec3', 'vec3_'+node.id );
+                break;
+            case MATERIAL_SCHEMA.NODE.PARAM_VEC_4:
+                this.nodeIdMap[node.id] = this._shaderGraph.graph.addInput('vec4', 'vec4_'+node.id );
+                break;
+            case MATERIAL_SCHEMA.NODE.PARAM_TEXTURE:
+                this.nodeIdMap[node.id] = this._shaderGraph.graph.addInput('sampler2D', 'tex_'+node.id );
+                break;
+            default:
+                this.nodeIdMap[node.id] = this._shaderGraph.graph.addSubGraph(this._shaderGraph._getNode(node.nodeType));
+                break;
+        }
     }
 
     _deleteNode(node) {
@@ -258,11 +323,29 @@ class Graph extends Element {
                 this._graphData.unset(`data.edges.${edgeKeys[i]}`);
             }
         }
+
+        // todo
     }
 
     _deleteEdge(edgeId) {
         this.view.removeEdge(edgeId);
         this._graphData.unset(`data.edges.${edgeId}`);
+
+        // locate edge in shadergraph and invalidate or remove it 
+    }
+
+    _saveJSON() {
+
+        function replacer(key, value) {
+            // Filtering out properties
+            if (typeof value === 'object' && value.graphData)
+            {
+                return { subgName: value.name };
+            }
+            return value;
+        }
+
+        console.log(JSON.stringify(shadergraph.graph.graphData, replacer.bind(this)));
     }
 }
 

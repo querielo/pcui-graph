@@ -32,6 +32,9 @@ class ContextMenu {
             document.removeEventListener('click', removeMenu);
         };
 
+        var maxItemsPerColumn = 16;
+        var numColumns = Math.floor(args.items.length / maxItemsPerColumn) + 1;
+
         // if (args.triggerElement) {
 
         // }
@@ -41,8 +44,10 @@ class ContextMenu {
             e.preventDefault();
             e.stopPropagation();
             menu.class.add(CLASS_ContextMenu_active);
-            var maxMenuHeight = args.items.length * 27.0;
-            var maxMenuWidth = 150.0;
+
+            var maxMenuHeight = Math.min(args.items.length, maxItemsPerColumn) * 27.0;
+            var maxMenuWidth = 150.0 * numColumns;
+
             var left = e.clientX;
             var top = e.clientY;
             if (maxMenuHeight + top > window.innerHeight) {
@@ -60,8 +65,12 @@ class ContextMenu {
         if (!args.items) return;
 
         args.items.forEach((menuItem, i) => {
+
+            var col = Math.floor(i / maxItemsPerColumn);
+            var row = i % maxItemsPerColumn;
+
             var menuItemElement = new Container();
-            menuItemElement.dom.setAttribute("style", `top: ${i * 27.0}px`);
+            menuItemElement.dom.setAttribute("style", `left: ${col * 150.0}px; top: ${row * 27.0}px`);
             if (menuItem.onClick) {
                 menuItemElement.dom.addEventListener('click', (e) => {
                     e.stopPropagation(); removeMenu(); menuItem.onClick(e);
@@ -72,8 +81,12 @@ class ContextMenu {
             this._menu.dom.append(menuItemElement.dom);
             if (menuItem.items) {
                 menuItem.items.forEach((childItem, j) => {
+
+                    var colj = Math.floor(j / maxItemsPerColumn);
+                    var rowj = j % maxItemsPerColumn;
+
                     var childMenuItemElement = new Container({ class: CLASS_ContextMenu_child });
-                    childMenuItemElement.dom.setAttribute("style", `top: ${j * 27.0}px; left: 150px;`);
+                    childMenuItemElement.dom.setAttribute("style", `top: ${rowj * 27.0}px; left: ${(colj + 1) * 150.0}px;`);
                     childMenuItemElement.on('click', (e) => {
                         e.stopPropagation(); removeMenu(); childItem.onClick(e);
                     });
@@ -88,8 +101,9 @@ class ContextMenu {
                 this._menu.forEachChild(node => node.class.remove(CLASS_ContextMenu_parent_active));
                 menuItemElement.class.add(CLASS_ContextMenu_parent_active);
 
-                var maxMenuHeight = menuItem.items ? menuItem.items.length * 27.0 : 0.0;
-                var maxMenuWidth = 150.0;
+                var maxMenuHeight = menuItem.items ? Math.min(args.items.length, maxItemsPerColumn) * 27.0 : 0.0;
+                var maxMenuWidth = 150.0 * numColumns;
+
                 var left = e.clientX + maxMenuWidth > window.innerWidth ? - maxMenuWidth + 2.0 : maxMenuWidth;
                 var top = 0;
                 if (e.clientY + maxMenuHeight > window.innerHeight) {
@@ -97,7 +111,11 @@ class ContextMenu {
                 }
                 menuItemElement.forEachChild((node, j) => {
                     if (j === 0) return;
-                    node.dom.setAttribute("style", `top: ${top + (j - 1) * 27.0}px; left: ${left}px;`);
+
+                    var colj = Math.floor(j / maxItemsPerColumn);
+                    var rowj = j % maxItemsPerColumn;
+
+                    node.dom.setAttribute("style", `top: ${top + (rowj - 1) * 27.0}px; left: ${left + (colj * 150.0)}px;`);
                 });
             });
         });
