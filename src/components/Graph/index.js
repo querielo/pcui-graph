@@ -216,29 +216,38 @@ class Graph extends Element {
         var dstNodeID = dstIsPort ? -1 : dstNodeOrPort;
         var srcPortName = srcIsPort ? srcNodeOrPort.name : this._graphSchema.nodes[this._graphData.get(`data.nodes`)[edge.from].nodeType].outPorts[edge.outPort].name;
         var dstPortName = dstIsPort ? dstNodeOrPort.name : this._graphSchema.nodes[this._graphData.get(`data.nodes`)[edge.to].nodeType].inPorts[edge.inPort].name;
-        /*
-        * pc.shadergraph.output(arg, 'vec3', 'vertOff');
-        * pc.shadergraph.output(arg, 'float', 'dAlpha');
-        * pc.shadergraph.output(arg, 'float', 'dMetalness');
-        * pc.shadergraph.output(arg, 'float', 'dGlossiness');
-        * pc.shadergraph.output(arg, 'vec3', 'dAlbedo');
-        * pc.shadergraph.output(arg, 'vec3', 'dEmission');
-        */
+
         if (dstIsPort)
         {
             switch (edge.inPort) {
-                case 0:
+                case 0: // 'vertex offset',
                     dstPortName = `OUT_vertOff`;
                     this._shaderGraph.graph.addOutput('vec3', 'vertOff');
                     break;
-                case 1:
+                case 1: // 'albedo',
+                    dstPortName = `OUT_dAlbedo`;
+                    this._shaderGraph.graph.addOutput('vec3', 'dAlbedo');
+                    break;
+                case 2: // 'normal',
+                    dstPortName = `OUT_dNormalMap`;
+                    this._shaderGraph.graph.addOutput('vec3', 'dNormalMap');
+                    break;
+                case 3: // 'glossiness',
+                    dstPortName = `OUT_dGlossiness`;
+                    this._shaderGraph.graph.addOutput('float', 'dGlossiness');
+                    break;
+                case 4: // 'specularity',
+                    dstPortName = `OUT_dSpecularity`;
+                    this._shaderGraph.graph.addOutput('vec3', 'dSpecularity');
+                    break;
+                case 5: // 'emissive',
                     dstPortName = `OUT_dEmission`;
                     this._shaderGraph.graph.addOutput('vec3', 'dEmission');
                     break;
-                case 2:
+                case 6: // 'alpha',
                     dstPortName = `OUT_dAlpha`;
                     this._shaderGraph.graph.addOutput('float', 'dAlpha');
-                    break;
+                    break;                                    
                 default:
                     break;
             }

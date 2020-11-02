@@ -279,6 +279,22 @@ var materialSchema = {
                     type: MATERIAL_SCHEMA.EDGE.VEC_3
                 },
                 {
+                    name: 'albedo',
+                    type: MATERIAL_SCHEMA.EDGE.VEC_3
+                },
+                {
+                    name: 'normal',
+                    type: MATERIAL_SCHEMA.EDGE.VEC_3
+                },
+                {
+                    name: 'glossiness',
+                    type: MATERIAL_SCHEMA.EDGE.FLOAT
+                },                    
+                {
+                    name: 'specularity',
+                    type: MATERIAL_SCHEMA.EDGE.VEC_3
+                },                
+                {
                     name: 'emissive',
                     type: MATERIAL_SCHEMA.EDGE.VEC_3
                 },
@@ -361,6 +377,7 @@ var materialData = {
             name: 'StdMat Output',
             posX: 900,
             posY: 350
+            // texture: 'https://cdnb.artstation.com/p/assets/images/images/008/977/853/large/'
         }
     },
     edges: {
