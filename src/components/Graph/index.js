@@ -199,7 +199,7 @@ class Graph extends pcui.Element {
 
     selectNode(node, suppressEvents) {
         const prevItem = this._selectedItem;
-        this.deselectItem();
+        this.deselectItem(suppressEvents);
         if (!suppressEvents) this.dom.dispatchEvent(new CustomEvent(GRAPH_ACTIONS.SELECT_NODE, { detail: { node, prevItem } }));
         this._selectedItem = new SelectedItem(this, 'NODE', node.id);
         this._selectedItem.selectItem();
@@ -207,7 +207,7 @@ class Graph extends pcui.Element {
 
     selectEdge(edge, edgeId, suppressEvents) {
         const prevItem = this._selectedItem;
-        this.deselectItem();
+        this.deselectItem(suppressEvents);
         if (!suppressEvents) this.dom.dispatchEvent(new CustomEvent(GRAPH_ACTIONS.SELECT_EDGE, { detail: { edge, edgeId, prevItem } }));
         this._selectedItem = new SelectedItem(this, 'EDGE', `${edge.from}-${edge.to}`, edgeId);
         this._selectedItem.selectItem();
@@ -331,7 +331,7 @@ class Graph extends pcui.Element {
             if (!this._config.passiveUIEvents) {
                 this._graphData.set(`data.nodes.${nodeId}`, node);
             } else {
-                this.updateNodePosition(nodeId, { x: prevPosX, y: prevPosY });
+                this.updateNodePosition(nodeId, { x: pos.x, y: pos.y });
             }
             this.dom.dispatchEvent(new CustomEvent(GRAPH_ACTIONS.UPDATE_NODE_POSITION, { detail: node }));
         }
